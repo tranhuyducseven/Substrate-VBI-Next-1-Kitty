@@ -1,29 +1,15 @@
 #![cfg_attr(not(feature = "std"), no_std)]
-
-/// Edit this file to define custom logic or remove it if it is not needed.
-/// Learn more about FRAME and the core library of Substrate FRAME pallets:
-/// <https://docs.substrate.io/v3/runtime/frame>
-pub use pallet::*;
-
-// #[cfg(test)]
-// mod mock;
-
-// #[cfg(test)]
-// mod tests;
-
-// #[cfg(feature = "runtime-benchmarks")]
-// mod benchmarking;
-
 use frame_support::inherent::Vec;
 use frame_support::pallet_prelude::*;
 use frame_system::pallet_prelude::*;
+pub use pallet::*;
 
 #[frame_support::pallet]
 pub mod pallet {
 	pub use super::*;
 	#[derive(TypeInfo, Default, Encode, Decode)]
 	#[scale_info(skip_type_params(T))]
-	pub struct Kitty<T:Config> {
+	pub struct Kitty<T: Config> {
 		dna: Vec<u8>,
 		owner: T::AccountId,
 		price: u32,
@@ -43,10 +29,8 @@ pub mod pallet {
 			Gender::Male
 		}
 	}
-	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
-		/// Because this pallet emits events, it depends on the runtime's definition of an event.
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 	}
 
@@ -54,61 +38,63 @@ pub mod pallet {
 	#[pallet::generate_store(pub(super) trait Store)]
 	#[pallet::without_storage_info]
 	pub struct Pallet<T>(_);
-
-	// The pallet's runtime storage items.
-	// https://docs.substrate.io/v3/runtime/storage
 	#[pallet::storage]
 	#[pallet::getter(fn number_of_kittens)]
-	// Learn more about declaring storage items:
-	// https://docs.substrate.io/v3/runtime/storage#declaring-storage-items
 	pub type NumberOfKittens<T> = StorageValue<_, Amount, ValueQuery>;
 
-	// key : id
+	// key : dna
+	//value : kitty
 	#[pallet::storage]
-	//value : student
 	#[pallet::getter(fn kitty)]
-	pub(super) type KittyList<T: Config> = StorageMap<_, Blake2_128Concat, Dna, Kitty<T>, OptionQuery>;
+	pub(super) type KittyList<T: Config> =
+		StorageMap<_, Blake2_128Concat, Dna, Kitty<T>, OptionQuery>;
 
-	// Pallets use events to inform users when important changes are made.
-	// https://docs.substrate.io/v3/runtime/events-and-errors
+	// key : accountId
+	//value : dna
+	#[pallet::storage]
+	#[pallet::getter(fn owner)]
+	pub(super) type KittyOfOwnerList<T: Config> =
+		StorageMap<_, Blake2_128Concat, T::AccountId, Vec<Dna>, OptionQuery>;
+
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		/// Event documentation should end with an array that provides descriptive names for event
-		/// parameters. [something, who]
 		KittyStored(Vec<u8>, u32),
 	}
 
-	// Errors inform users that something went wrong.
 	#[pallet::error]
 	pub enum Error<T> {
-		/// Error names should be descriptive.
-		/// Errors should have helpful documentation associated with them.
 		StorageOverflow,
 	}
-
-	// Dispatchable functions allows users to interact with the pallet and invoke state changes.
-	// These functions materialize as "extrinsics", which are often compared to transactions.
-	// Dispatchable functions must be annotated with a weight and must return a DispatchResult.
 
 	//extrinsic
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
-		/// An example dispatchable that takes a singles value as a parameter, writes the value to
-		/// storage and emits an event. This function must be dispatched by a signed extrinsic.
 		#[pallet::weight(10_000 + T::DbWeight::get().writes(1))]
 		pub fn create_kitty(origin: OriginFor<T>, dna: Vec<u8>, price: u32) -> DispatchResult {
-			// Check that the extrinsic was signed and get the signer.
-			// This function will return an error if the extrinsic is not signed.
-			// https://docs.substrate.io/v3/runtime/origins
 			let who = ensure_signed(origin)?;
 			let gender = Self::gen_gender(dna.clone())?;
-			let kitty = Kitty { dna: dna.clone(), owner: who, price, gender };
-			let mut current_number_of_kittens = <NumberOfKittens<T>>::get();
-			// Student::<T>::insert(current_id, student);
+			let kitty = Kitty { dna: dna.clone(), owner: who.clone(), price, gender };
+			// add a new kitty
 			<KittyList<T>>::insert(dna.clone(), kitty);
+
+			//update number_of_kittens
+			let mut current_number_of_kittens = <NumberOfKittens<T>>::get();
 			current_number_of_kittens += 1;
 			<NumberOfKittens<T>>::put(current_number_of_kittens);
+
+			//update kitty of owner
+			<KittyOfOwnerList<T>>::mutate(who.clone(), |dna_list| {
+				match dna_list {
+					Some(dna_list) => dna_list.push(dna.clone()),
+					None => {
+						let mut list = Vec::new();
+						list.push(dna.clone());
+						*dna_list = Some(list);
+					},
+				};
+			});
+
 			// Emit an event.
 			Self::deposit_event(Event::KittyStored(dna, price));
 			// Return a successful DispatchResultWithPostInfo
@@ -121,12 +107,10 @@ pub mod pallet {
 
 impl<T> Pallet<T> {
 	fn gen_gender(dna: Vec<u8>) -> Result<Gender, Error<T>> {
-		let mut res = Gender::Male;
+		let mut res = Gender::Female;
 		if dna.len() % 2 == 0 {
-			res = Gender::Female;
+			res = Gender::Male;
 		}
 		Ok(res)
 	}
 }
-
-
