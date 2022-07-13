@@ -65,6 +65,7 @@ pub mod pallet {
 	#[pallet::error]
 	pub enum Error<T> {
 		StorageOverflow,
+		NotOwner,
 	}
 
 	//extrinsic
@@ -98,6 +99,31 @@ pub mod pallet {
 			// Emit an event.
 			Self::deposit_event(Event::KittyStored(dna, price));
 			// Return a successful DispatchResultWithPostInfo
+			Ok(())
+		}
+
+		#[pallet::weight(10_000 + T::DbWeight::get().writes(1))]
+		pub fn swap_owner(
+			origin: OriginFor<T>,
+			dna: Dna,
+			new_owner: T::AccountId,
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+			//get kitty
+			let kitty = <KittyList<T>>::get(dna.clone());
+			//check owner
+		
+			//update owner
+			match kitty {
+				Some(mut tmp_kitty) => {
+					ensure!(tmp_kitty.owner == who, Error::<T>::NotOwner);
+					tmp_kitty.owner = new_owner;
+					<KittyList<T>>::insert(dna.clone(), tmp_kitty);
+				},
+				None => {},
+			}
+			//remove old owner's list
+
 			Ok(())
 		}
 	}
