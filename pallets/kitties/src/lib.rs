@@ -119,30 +119,30 @@ pub mod pallet {
 					ensure!(tmp_kitty.owner == who, Error::<T>::NotOwner);
 					tmp_kitty.owner = new_owner.clone();
 					<KittyList<T>>::insert(dna.clone(), tmp_kitty);
+					//remove old owner's list
+					<KittyOfOwnerList<T>>::mutate(who.clone(), |dna_list| {
+						match dna_list {
+							Some(dna_list) => {
+								dna_list.retain(|x| x != &dna);
+							},
+							None => {},
+						};
+					});
+
+					//update new owner's list
+					<KittyOfOwnerList<T>>::mutate(new_owner.clone(), |dna_list| {
+						match dna_list {
+							Some(dna_list) => dna_list.push(dna.clone()),
+							None => {
+								let mut list = Vec::new();
+								list.push(dna.clone());
+								*dna_list = Some(list);
+							},
+						};
+					});
 				},
 				None => {},
 			}
-			//remove old owner's list
-			<KittyOfOwnerList<T>>::mutate(who.clone(), |dna_list| {
-				match dna_list {
-					Some(dna_list) => {
-						dna_list.retain(|x| x != &dna);
-					},
-					None => {},
-				};
-			});
-
-			//update new owner's list
-			<KittyOfOwnerList<T>>::mutate(new_owner.clone(), |dna_list| {
-				match dna_list {
-					Some(dna_list) => dna_list.push(dna.clone()),
-					None => {
-						let mut list = Vec::new();
-						list.push(dna.clone());
-						*dna_list = Some(list);
-					},
-				};
-			});
 
 			Ok(())
 		}
