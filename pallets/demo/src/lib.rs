@@ -17,7 +17,6 @@ pub use pallet::*;
 use frame_support::pallet_prelude::*;
 use frame_system::pallet_prelude::*;
 use frame_support::inherent::Vec;
-use frame_support::dispatch::fmt;
 
 #[frame_support::pallet]
 pub mod pallet {
