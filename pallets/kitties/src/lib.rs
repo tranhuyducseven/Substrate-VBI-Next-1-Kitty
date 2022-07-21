@@ -20,6 +20,7 @@ use scale_info::TypeInfo;
 use sp_std::vec::Vec;
 pub type Id = u32;
 use frame_support::traits::Currency;
+use frame_support::traits::Get;
 use frame_support::traits::UnixTime;
 use sp_runtime::ArithmeticError;
 
@@ -51,6 +52,8 @@ pub mod pallet {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		type Currency: Currency<Self::AccountId>;
 		type TimeProvider: UnixTime;
+		#[pallet::constant]
+		type KittyCapacity: Get<u32>;
 	}
 
 	#[pallet::pallet]
@@ -99,6 +102,7 @@ pub mod pallet {
 		NoKitty,
 		NotOwner,
 		TransferToSelf,
+		Overflow,
 	}
 
 	// Dispatchable functions allows users to interact with the pallet and invoke state changes.
@@ -112,6 +116,12 @@ pub mod pallet {
 		pub fn create_kitty(origin: OriginFor<T>, dna: Vec<u8>) -> DispatchResult {
 			// Make sure the caller is from a signed origin
 			let owner = ensure_signed(origin)?;
+			let collection = KittiesOwned::<T>::get(&owner);
+			let length: u32 = collection.len() as u32;
+			ensure!(
+				length < T::KittyCapacity::get(),
+				Error::<T>::TooManyOwned
+			);
 			log::info!("total balance:{:?}", T::Currency::total_balance(&owner));
 			let gender = Self::gen_gender(&dna)?;
 			let time: u64 = T::TimeProvider::now().as_secs();
