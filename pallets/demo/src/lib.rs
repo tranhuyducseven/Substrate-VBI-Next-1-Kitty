@@ -5,11 +5,11 @@
 /// <https://docs.substrate.io/v3/runtime/frame>
 pub use pallet::*;
 
-// #[cfg(test)]
-// mod mock;
+#[cfg(test)]
+mod mock;
 
-// #[cfg(test)]
-// mod tests;
+#[cfg(test)]
+mod tests;
 
 // #[cfg(feature = "runtime-benchmarks")]
 // mod benchmarking;
@@ -148,10 +148,3 @@ impl<T> Pallet<T> {
 	}
 }
 
-// Tóm tắt:
-//Custom type: Struct ,Enum
-// Sử dụng generic type đối với trait
-// helper function
-// origin
-// một số method cơ bản liên quan tới read/write storage
-// giải quuêys một số bug có thể có .
