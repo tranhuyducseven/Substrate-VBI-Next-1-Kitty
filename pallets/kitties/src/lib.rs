@@ -130,7 +130,7 @@ pub mod pallet {
 	//extrinsic
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
-		#[pallet::weight(56_000_000 + T::DbWeight::get().reads_writes(5, 3))]
+		#[pallet::weight(51_056_000 + T::DbWeight::get().reads_writes(5, 3))]
 		pub fn create_kitty(origin: OriginFor<T>, dna: Vec<u8>) -> DispatchResult {
 			// Make sure the caller is from a signed origin
 			let owner = ensure_signed(origin)?;
@@ -180,7 +180,7 @@ pub mod pallet {
 
 			Ok(())
 		}
-		#[pallet::weight(0)]
+		#[pallet::weight(31_184_000 + T::DbWeight::get().reads_writes(3, 3))]
 		pub fn transfer(origin: OriginFor<T>, to: T::AccountId, dna: T::Hash) -> DispatchResult {
 			// Make sure the caller is from a signed origin
 			let from = ensure_signed(origin)?;
